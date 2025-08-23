@@ -1,0 +1,2 @@
+# AMICO
+Self companion
