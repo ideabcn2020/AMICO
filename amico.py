@@ -1,133 +1,72 @@
-import logging, warnings
+# amico.py — clean console + split warning capture
 from pathlib import Path
-import time
-from amico_stt import stt
-from amico_listen import record_audio
-from amico_vp import vp, _valid_vp
+import warnings
+from contextlib import redirect_stderr
 
-### WARNINGS CAPTURE --> CONSOLE CLEAN --> WARNINGS IN LOG FILE
-WARN_LOG = Path.home() / "amico_2" / "logs" / "warnings.log"
-WARN_LOG.parent.mkdir(parents=True, exist_ok=True)
-# CLEAN FILE EACH RUN
+# ---------- LOG SETUP (run this BEFORE any noisy imports) ----------
+LOG_DIR = (Path(__file__).parent / "logs")
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+
+IMPORT_WARN_LOG = LOG_DIR / "import_warnings.log"   # warnings + stderr during imports
+WARN_LOG        = LOG_DIR / "warnings.log"          # warnings during runtime
+
+# Truncate both logs on each run
+IMPORT_WARN_LOG.write_text("")
 WARN_LOG.write_text("")
 
-# SEND PYTHON WARNING
-logging.captureWarnings(True)
-wlog = logging.getLogger("py.warnings")
-wlog.propagate = False                     
-wlog.handlers[:] = [                       
-    logging.FileHandler(WARN_LOG, mode="a", encoding="utf-8")
-]
-wlog.setLevel(logging.WARNING)
-warnings.simplefilter("default")           
+def _make_showwarning(target_path: Path):
+    def _showwarning(message, category, filename, lineno, file=None, line=None):
+        with open(target_path, "a", encoding="utf-8") as f:
+            f.write(warnings.formatwarning(message, category, filename, lineno, line))
+    return _showwarning
 
-### END WARNING CAPTURE
+# Ensure warnings are emitted so we can capture them
+warnings.simplefilter("default")
 
+# During imports: capture warnings to IMPORT_WARN_LOG and redirect stderr there too
+warnings.showwarning = _make_showwarning(IMPORT_WARN_LOG)
+with open(IMPORT_WARN_LOG, "a", encoding="utf-8") as _imp_err, redirect_stderr(_imp_err):
+    from amico_stt import stt
+    from amico_listen import record_audio
+    from amico_vp import vp, _valid_vp
 
-#import warnings
-#warnings.filterwarnings("ignore", message=r".*list_audio_backends.*deprecated.*", category=UserWarning)
-#warnings.filterwarnings("ignore", message=r".*torch\.cuda\.amp\.custom_fwd.*deprecated.*", category=FutureWarning)
-
-#from audio_input import record_audio
-#from transcriber import transcribe_and_detect_language
-#from voice_auth import extract_voiceprint, check_voice_match, insert_new_user_with_voiceprint,store_voiceprint_if_needed,confirm_user_by_voice,get_user_name_by_id
-#from voice_utils import speak_text
-#import subprocess
-#from gpt_utils import extract_name_from_text,translate_text,ask_gpt_with_web
-#from user_handling import handle_known_user, handle_unknown_user, handle_possible_user
+# After imports: route all subsequent warnings to WARN_LOG
+warnings.showwarning = _make_showwarning(WARN_LOG)
+# ---------- END LOG SETUP ----------
 
 
 def main():
     print("🤖 AMICO is running. Press Ctrl+C to stop.")
-
     try:
         while True:
-            print("🎙️ AMICO v0.2")               
+            print("🎙️ AMICO v0.2")
+
             audio_path = record_audio()
-            input("Press Enter to continue...") 
+            input("Press Enter to continue...")
+
             print("📝 Transcribing...")
-            text,language = stt(audio_path)
+            text, language = stt(audio_path)
             print(f"🗣️ You said: {text}")
             print(f"🌐 Detected language: {language}")
-            input("Press Enter to continue...") 
-            print("🗣️ Temp store of 'You said' for storage purpose")
-            user_said = text
             input("Press Enter to continue...")
+
+            print("🗣️ Temp store of 'You said' for storage purpose")
+            user_said = text  # placeholder for storage module
+            input("Press Enter to continue...")
+
             print("📝 Extracting Voiceprint...")
             voiceprint = vp(audio_path)
             if _valid_vp(voiceprint):
                 print("✅ Voiceprint extracted")
             else:
                 print("⚠️ No voiceprint extracted")
-            input("Press Enter to continue...") 
+
+            input("Press Enter to continue...")
             quit()
-            #print("📝 Checking user...")
-            #user_id,similarity = check_voice_match(voiceprint)            
-            #print(f"📝 : {similarity}")
-            #input("Press Enter to continue...") 
-            #if similarity < 0.99: # it should be 0.45
-                #print("🆕 New user")
-                #input("Press Enter to continue...") 
-                #handle_unknown_user(voiceprint)
-                
-                
-                                
-            #elif 0.1 <= similarity < 0.2:    #must be 0.45 to 0.75
-                #print("🤔 Possible known user")
-                #input("Press Enter to continue...") 
-                #suspected_name = get_user_name_by_id(user_id) 
-                #confirmed = confirm_user_by_voice(suspected_name, language) 
-                #if confirmed:
-                        #user_id = user_id  # reuse the same ID
-                        #final_reply = chat_with_gpt(messages, language=language)
-                #else:
-                        # re-run matching logic using the new input
-                        #user_id, similarity = check_voice_match(voiceprint)
-                        #quit()
-            #else:
-                #print(f"✅ Known user: {user_id}")
-                #input("Press Enter to continue...")
-                #handle_known_user(user_id,voiceprint)
-                #print("💬 Responding to the original input...")
-                #prompt = [{"role": "user", "content": user_input_text}]
-                #final_reply = ask_gpt_with_web(prompt, language=language)
-                #print(f"🤖 GPT reply: {final_reply}")
-                #speak_text(final_reply)
-                
-                
-                
-
-
-
-
-
-
-
-
-
-#except Exception as e:
- #   print(f"❌ Error extracting voiceprint: {e}")
-
-
-
-            #print("🔐 Authenticating user...")
-            #user_id, user_name = authenticate_user(audio_path, language)
-
-            #print(f"👤 User: {user_name} (ID: {user_id})")
-
-            #print("💬 Generating response...")
-            #response = chat_with_gpt(text, user_id, user_name)
-
-            #print(f"🤖 AMICO: {response}")
-            #speak_text(response)
-
-            #log_user_input(user_id, text, response)
-
-            #print("⏱️ Waiting for next input...\n")
-            #time.sleep(1)
 
     except KeyboardInterrupt:
         print("\n👋 Shutting down AMICO.")
+
 
 if __name__ == "__main__":
     main()
