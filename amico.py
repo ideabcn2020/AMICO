@@ -1,6 +1,8 @@
+
 import time
 from amico_stt import stt
 from amico_listen import record_audio
+from amico_vp import vp
 
 #import warnings
 #warnings.filterwarnings("ignore", message=r".*list_audio_backends.*deprecated.*", category=UserWarning)
@@ -28,11 +30,11 @@ def main():
             print(f"🗣️ You said: {text}")
             print(f"🌐 Detected language: {language}")
             input("Press Enter to continue...") 
-            print("🗣️ Temp store of "You said" for storage purpose")
+            print("🗣️ Temp store of 'You said' for storage purpose")
             user_said = text
             input("Press Enter to continue...")
             print("📝 Extracting Voiceprint...")
-            #voiceprint = extract_voiceprint(audio_path)
+            voiceprint = vp(audio_path)
             #print("🔊 Voiceprint vector:")
             #print(f"🌐 {voiceprint})
             #print("🧮 Shape:", voiceprint.shape)
