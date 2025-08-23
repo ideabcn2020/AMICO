@@ -1,6 +1,6 @@
 import numpy as np
 import torch, torchaudio
-from speechbrain.pretrained import EncoderClassifier
+from speechbrain.inference import EncoderClassifier
 
 # Modelo de extracción
 MODEL = "speechbrain/spkrec-ecapa-voxceleb"
@@ -37,3 +37,19 @@ def vp(path: str) -> np.ndarray:
 def cosine_sim(a: np.ndarray, b: np.ndarray) -> float:
     return float(np.dot(a, b) / (np.linalg.norm(a)*np.linalg.norm(b) + 1e-8))
 
+
+def _valid_vp(vp) -> bool:
+    """Return True if vp is a valid (192,) float32, finite, non-zero vector."""
+    return (
+        isinstance(vp, np.ndarray)
+        and vp.ndim == 1
+        and vp.size == 192
+        and vp.dtype == np.float32
+        and np.isfinite(vp).all()
+        and np.linalg.norm(vp) > 1e-6
+    )
+
+# (optional) convenience wrapper that returns None if invalid
+def vp_or_none(path: str):
+    emb = vp(path)
+    return emb if _valid_vp(emb) else None
