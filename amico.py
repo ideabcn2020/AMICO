@@ -27,20 +27,22 @@ def main():
             text,language = stt(audio_path)
             print(f"🗣️ You said: {text}")
             print(f"🌐 Detected language: {language}")
-            #input("Press Enter to continue...") 
-            quit()
-            #user_input_text = text # Aqui guardamos la transcripción para más tarde!
-            #print("📝 Voiceprint...")
+            input("Press Enter to continue...") 
+            print("🗣️ Temp store of "You said" for storage purpose")
+            user_said = text
+            input("Press Enter to continue...")
+            print("📝 Extracting Voiceprint...")
             #voiceprint = extract_voiceprint(audio_path)
             #print("🔊 Voiceprint vector:")
-            #print(voiceprint)
+            #print(f"🌐 {voiceprint})
             #print("🧮 Shape:", voiceprint.shape)
             #Mostramos si la voiceprint ha sido extraída o no
-            #if voiceprint is not None and voiceprint.nelement() > 0:
-                #print("✅ Voiceprint extracted")
+            if voiceprint is not None and voiceprint.nelement() > 0:
+                print("✅ Voiceprint extracted")
             #else:
-                #print("⚠️ No voiceprint extracted")
-            #input("Press Enter to continue...") 
+                print("⚠️ No voiceprint extracted")
+            input("Press Enter to continue...") 
+            quit()
             #print("📝 Checking user...")
             #user_id,similarity = check_voice_match(voiceprint)            
             #print(f"📝 : {similarity}")
