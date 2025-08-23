@@ -1,8 +1,28 @@
-
+import logging, warnings
+from pathlib import Path
 import time
 from amico_stt import stt
 from amico_listen import record_audio
-from amico_vp import vp
+from amico_vp import vp, _valid_vp
+
+### WARNINGS CAPTURE --> CONSOLE CLEAN --> WARNINGS IN LOG FILE
+WARN_LOG = Path.home() / "amico_2" / "logs" / "warnings.log"
+WARN_LOG.parent.mkdir(parents=True, exist_ok=True)
+# CLEAN FILE EACH RUN
+WARN_LOG.write_text("")
+
+# SEND PYTHON WARNING
+logging.captureWarnings(True)
+wlog = logging.getLogger("py.warnings")
+wlog.propagate = False                     
+wlog.handlers[:] = [                       
+    logging.FileHandler(WARN_LOG, mode="a", encoding="utf-8")
+]
+wlog.setLevel(logging.WARNING)
+warnings.simplefilter("default")           
+
+### END WARNING CAPTURE
+
 
 #import warnings
 #warnings.filterwarnings("ignore", message=r".*list_audio_backends.*deprecated.*", category=UserWarning)
@@ -35,13 +55,9 @@ def main():
             input("Press Enter to continue...")
             print("📝 Extracting Voiceprint...")
             voiceprint = vp(audio_path)
-            #print("🔊 Voiceprint vector:")
-            #print(f"🌐 {voiceprint})
-            #print("🧮 Shape:", voiceprint.shape)
-            #Mostramos si la voiceprint ha sido extraída o no
-            if voiceprint is not None and voiceprint.nelement() > 0:
+            if _valid_vp(voiceprint):
                 print("✅ Voiceprint extracted")
-            #else:
+            else:
                 print("⚠️ No voiceprint extracted")
             input("Press Enter to continue...") 
             quit()
