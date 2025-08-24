@@ -29,6 +29,8 @@ with open(IMPORT_WARN_LOG, "a", encoding="utf-8") as _imp_err, redirect_stderr(_
     from amico_stt import stt
     from amico_listen import record_audio
     from amico_vp import vp, _valid_vp
+    from amico_emotions import detect_emotion
+    from amico_fuse_emotion import fuse_audio_text
 
 # After imports: route all subsequent warnings to WARN_LOG
 warnings.showwarning = _make_showwarning(WARN_LOG)
@@ -49,6 +51,24 @@ def main():
             print(f"🗣️ You said: {text}")
             print(f"🌐 Detected language: {language}")
             input("Press Enter to continue...")
+            
+            print("📝 Emotion")
+            emo_a = detect_emotion(audio_path, mode="light")  # audio arousal (cheap)  :contentReference[oaicite:4]{index=4}
+            txt = (text or "").strip()
+            if len(txt) >= 8:
+                try:
+                    # lazy import here, AFTER your import-redirect block is long gone
+                    from amico_txt_emotion import detect_text_emotion
+                    # capture progress bars / logs into WARN_LOG
+                    with open(WARN_LOG, "a", encoding="utf-8") as _runlog, redirect_stderr(_runlog), redirect_stdout(_runlog):
+                        te = detect_text_emotion(txt, lang=language or "en")
+                    a_fused, lab_fused = fuse_audio_text(emo_a["arousal"], te["dist"])
+                    print(f"🙂 audio:{emo_a['label']}({emo_a['arousal']:.2f})  📝 text:{te['label']}({te['confidence']:.2f})  🧪 fused:{lab_fused}({a_fused:.2f})")
+                except Exception:
+                    # transformers missing / first-run download error → stay audio-only
+                    print(f"🙂 audio-only:{emo_a['label']}({emo_a['arousal']:.2f}) — text model unavailable")
+            else:
+                print(f"🙂 audio-only:{emo_a['label']}({emo_a['arousal']:.2f}) — text too short")
 
             print("🗣️ Temp store of 'You said' for storage purpose")
             user_said = text  # placeholder for storage module
